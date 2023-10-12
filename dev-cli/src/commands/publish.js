@@ -1,6 +1,8 @@
 /* global Deno */
 
-import { basename, resolve } from 'https://deno.land/std@0.200.0/path/mod.ts'
+import { Command, basename, resolve } from '../deps.js'
+import { hostArgs } from '../utils.js'
+import { VERSION } from '../versions.js'
 
 function walletArgs (wallet) {
   /**
@@ -51,9 +53,10 @@ function tagArg (tags) {
  * - allow using environment variables to set things like path to wallet
  * - require confirmation and bypass with --yes
  */
-export async function publish ({ wallet, tag }, contractWasmPath) {
+export async function publish ({ wallet, host, tag }, contractWasmPath) {
   const cmdArgs = [
     ...walletArgs(wallet),
+    ...hostArgs(host),
     ...contractSourceArgs(contractWasmPath),
     ...tagArg(tag)
   ]
@@ -66,9 +69,29 @@ export async function publish ({ wallet, tag }, contractWasmPath) {
       'linux/amd64',
       ...cmdArgs,
       '-it',
-      'p3rmaw3b/ao',
+      `p3rmaw3b/ao:${VERSION.IMAGE}`,
       'ao-source'
     ]
   })
   await p.status()
 }
+
+export const command = new Command()
+  .description('Publish the file to Arweave')
+  .usage('-w ./wallet.json -b "https://node2.irys.xyz" -t "App-Name:Foo" -t "Type:Bar" contract.wasm')
+  .option(
+    '-w, --wallet <path:string>',
+    'the path to the wallet that should be used to sign the transaction',
+    { required: true }
+  )
+  .option(
+    '-b, --bundler <bundler:string>',
+    'the url of the bundler you would like to fund.'
+  )
+  .option(
+    '-t, --tag <tag:string>',
+    '"name:value" additional tag to add to the transaction',
+    { collect: true }
+  )
+  .arguments('<wasmfile:string>')
+  .action(publish)

@@ -1,0 +1,24 @@
+{
+  "name": "@permaweb/ao-cli-node",
+  "version": "0.0.1",
+  "description": "node impls for the CLI",
+  "sideEffects": false,
+  "type": "module",
+  "main": "src/main.js",
+  "bin": {
+    "ao-bundler-balance": "src/bin/bundler-balance.js",
+    "ao-bundler-fund": "src/bin/bundler-fund.js",
+    "ao-contract": "src/bin/ao-contract.js",
+    "ao-source": "src/bin/ao-source.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@irys/sdk": "^0.0.3",
+    "@permaweb/ao-sdk": "0.0.10"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

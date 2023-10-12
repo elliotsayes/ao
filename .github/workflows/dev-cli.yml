@@ -47,7 +47,7 @@ jobs:
         env:
           CI: true
 
-  test-publish-command:
+  test-node-commands:
     if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
@@ -62,10 +62,10 @@ jobs:
       - name: 📥 Download deps
         uses: bahmutov/npm-install@v1
         with:
-          working-directory: dev-cli/container/src/publish
+          working-directory: dev-cli/container/src/node
 
       - name: ⚡ Run Tests
-        working-directory: dev-cli/container/src/publish
+        working-directory: dev-cli/container/src/node
         run: |
           npm test
         env:
@@ -247,7 +247,7 @@ jobs:
         # To get around this, we first attempt to push the commit. If it succeeds, the tag is then pushed.
         # If pushing the commit fails, then the step fails and no tag is pushed up, which is what we want.
         run: |
-          git add deno.json
+          git add deno.json src/versions.js
           git commit -m "chore(dev-cli): bump version and update txMappings"
           git push
           git push --tags
