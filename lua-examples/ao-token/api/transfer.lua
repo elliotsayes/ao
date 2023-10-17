@@ -58,14 +58,54 @@ local function updateBalances(payload)
   end
 
   state.balances[caller] = state.balances[caller] - qty
-  return state
+
+  return payload
+end
+
+local function updateBalances(payload)
+  local state = payload.state
+  local target = payload.action.input.target
+  local qty = payload.action.input.qty
+  local caller = payload.action.caller
+
+  if state.balances[target] then
+    state.balances[target] = state.balances[target] + qty
+  else
+    state.balances[target] = qty
+  end
+
+  state.balances[caller] = state.balances[caller] - qty
+
+  return payload
+end
+
+local function notify(payload)
+  local state = payload.state
+  local action = payload.action
+  local SmartWeave = payload.SmartWeave
+  local output = {
+    state = state,
+    result = {
+      messages = {{
+        target = action.input.target,
+        message = {
+          type = action.input['function'],
+          from = SmartWeave.contract.id,
+          ['Forwarded-For'] = SmartWeave.transaction.owner
+        }
+      }}
+    }
+  }
+
+  return output
 end
 
 function M.transfer(state, action, SmartWeave)
   return Either.of({
     state = state,
-    action = action
-  }).chain(validate).map(updateBalances).fold(util.error, util.success)
+    action = action,
+    SmartWeave = SmartWeave
+  }).chain(validate).map(updateBalances).map(notify).fold(util.error, util.success)
 end
 
 return M
