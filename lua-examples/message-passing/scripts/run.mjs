@@ -1,8 +1,8 @@
-import { fromPromise, of } from 'hyper-async'
-import { writeInteraction, createDataItemSigner } from '@permaweb/ao-sdk'
-import { readFileSync } from 'fs'
-globalThis.MU_URL = 'http://localhost:3004'
-globalThis.CU_URL = 'http://localhost:3005'
+import { fromPromise, of } from 'hyper-async';
+import { writeInteraction, createDataItemSigner } from '@permaweb/ao-sdk';
+import { readFileSync } from 'fs';
+globalThis.MU_URL = 'http://localhost:3004';
+globalThis.CU_URL = 'http://localhost:3005';
 
 // run ao build
 async function main (tx) {
