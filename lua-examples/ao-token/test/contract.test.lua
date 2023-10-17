@@ -1,6 +1,7 @@
 -- load the luaunit module
 local luaunit = require('luaunit')
 local contract = require('contract');
+local util = require('common.util');
 
 -- Define the test class
 Test = {}
@@ -67,7 +68,18 @@ function Test:test_transfer()
   -- Set the function after cause lua doesnt like the word "function".
   action.input['function'] = 'transfer';
 
-  local output = contract.handle(state, action, {})
+  local SmartWeave = {
+    contract = {
+      id = '<contract-id>'
+    },
+    transaction = {
+      owner = "<owner>"
+    }
+  }
+
+  local output = contract.handle(state, action, SmartWeave)
+  print("Output ============")
+  util.printTable(output)
   luaunit.assertEquals(output.state.balances.x, 7) -- Check if add(2, 3) equals 5
   luaunit.assertEquals(output.state.balances.y, 8) -- Check if add(2, 3) equals 5
 end
