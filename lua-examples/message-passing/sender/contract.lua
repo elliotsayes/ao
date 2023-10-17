@@ -21,8 +21,6 @@ local function handleMessage(state, _action, _SmartWeave)
 end
 
 function contract.handle(state, action, SmartWeave)
-  print("Running sender handle")
-
   state.count = state.count + 1
   -- do stuff
   local response = {
@@ -34,7 +32,8 @@ function contract.handle(state, action, SmartWeave)
           type = action.input['function'],
           caller = SmartWeave.contract.id,
           from = SmartWeave.contract.id,
-          to = state.receiverTx
+          to = state.receiverTx,
+          ['Forwarded-For'] = SmartWeave.transaction.owner
         }
       }}
     }
