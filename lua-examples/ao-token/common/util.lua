@@ -9,15 +9,11 @@ function Main.error(error)
   }
 end
 
-function Main.success(state)
+function Main.success(payload)
   -- printTable(input)
   return {
-    state = state,
-    result = {
-      -- Not sure where I get messages from.
-      -- Ao lib?
-      messages = {}
-    }
+    state = payload.state,
+    result = payload.result
   }
 end
 
@@ -27,7 +23,7 @@ function Main.printTable(table, indent)
   for k, v in pairs(table) do
     if type(v) == "table" then
       print(string.rep("  ", indent) .. k .. " = {")
-      printTable(v, indent + 1)
+      Main.printTable(v, indent + 1)
       print(string.rep("  ", indent) .. "}")
     else
       print(string.rep("  ", indent) .. k .. " = " .. tostring(v))
