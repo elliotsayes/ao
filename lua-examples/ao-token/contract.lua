@@ -272,7 +272,7 @@ local function notify(payload)
         message = {
           type = action.input['function'],
           from = SmartWeave.contract.id,
-          ['Forwarded-For'] = SmartWeave.transaction.owner,
+          owner = SmartWeave.transaction.owner,
           qty = action.input.qty
         }
       }}
@@ -313,6 +313,8 @@ function API.default(state, action, SmartWeave)
 end
 
 function contract.handle(state, action, SmartWeave)
+  print("Running function!")
+  print(action.input['function'])
   local cases = {
     mint = 'mint',
     transfer = 'transfer',
