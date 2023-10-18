@@ -1,0 +1,22 @@
+{
+  "name": "ao-token",
+  "version": "1.0.0",
+  "description": "An TEST token with functions:",
+  "license": "ISC",
+  "author": "Justin Shaw",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "install": "(cd app && npm i)",
+    "launch": "node ./scripts/launch.mjs",
+    "run": "node ./scripts/run.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@bundlr-network/client": "0.11.17",
+    "@permaweb/ao-sdk": "0.0.10",
+    "hyper-async": "1.1.2"
+  }
+}
