@@ -62,23 +62,6 @@ local function updateBalances(payload)
   return payload
 end
 
-local function updateBalances(payload)
-  local state = payload.state
-  local target = payload.action.input.target
-  local qty = payload.action.input.qty
-  local caller = payload.action.caller
-
-  if state.balances[target] then
-    state.balances[target] = state.balances[target] + qty
-  else
-    state.balances[target] = qty
-  end
-
-  state.balances[caller] = state.balances[caller] - qty
-
-  return payload
-end
-
 local function notify(payload)
   local state = payload.state
   local action = payload.action
@@ -91,7 +74,8 @@ local function notify(payload)
         message = {
           type = action.input['function'],
           from = SmartWeave.contract.id,
-          ['Forwarded-For'] = SmartWeave.transaction.owner
+          owner = SmartWeave.transaction.owner,
+          qty = action.input.qty
         }
       }}
     }
