@@ -1,7 +1,7 @@
 -- load the luaunit module
 local luaunit = require('luaunit')
-local contract = require('contract');
-local util = require('common.util');
+local contract = require('index')
+local util = require('common.util')
 
 -- Define the test class
 Test = {}
@@ -82,6 +82,37 @@ function Test:test_transfer()
   util.printTable(output)
   luaunit.assertEquals(output.state.balances.x, 7) -- Check if add(2, 3) equals 5
   luaunit.assertEquals(output.state.balances.y, 8) -- Check if add(2, 3) equals 5
+end
+
+function Test:test_mint()
+  local state = {
+    balances = {
+      x = 10,
+      y = 5
+    },
+    minted = {
+      x = 1
+    }
+  }
+
+  local action = {
+    caller = "x",
+    input = {}
+  }
+
+  local SmartWeave = {
+    block = {
+      height = 721
+    }
+  }
+
+  -- Set the function after cause lua doesnt like the word "function".
+  action.input['function'] = 'mint';
+
+  local output = contract.handle(state, action, SmartWeave)
+  print('output')
+  util.printTable(output)
+  luaunit.assertEquals(output.state.balances.x, 1000010) -- Check if add(2, 3) equals 5
 end
 
 -- Run the test
