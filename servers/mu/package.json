@@ -14,8 +14,8 @@
   "scripts": {
     "docker-build": "docker build -t cu-app .",
     "docker-run": "npm run docker-build && docker run -p 3005:3005 cu-app",
-    "start": "node src/app.js",
-    "start:local": "nodemon src/app.js",
+    "start": "NODE_CONFIG_ENV='development' node src/app.js",
+    "start:local": "NODE_CONFIG_ENV='development' nodemon src/app.js",
     "test": "node --test ./src"
   },
   "dependencies": {
