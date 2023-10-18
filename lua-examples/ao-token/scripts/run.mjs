@@ -13,7 +13,8 @@ async function main(tx) {
   const jwk = JSON.parse(readFileSync(process.env.PATH_TO_WALLET, "utf-8"));
   const signer = () => createDataItemSigner(jwk);
   return of({ tx, signer })
-    .chain(fromPromise(interact))
+    .chain(fromPromise(mint))
+    .chain(({ tx, signer }) => fromPromise(transfer)({ tx, signer }))
     .chain(fromPromise(waitForOneSecond))
     .fork(
       (e) => {
@@ -35,10 +36,24 @@ async function waitForOneSecond(input) {
     }, num * 1000); // 1000 milliseconds = 1 second
   });
 }
-async function interact({ tx, signer }) {
+async function mint({ tx, signer }) {
   const interactionId = await writeInteraction({
     contractId: tx,
     input: { function: "mint" },
+    signer: signer(),
+    tags: [],
+  });
+  return interactionId;
+}
+
+async function transfer({ tx, signer }) {
+  const interactionId = await writeInteraction({
+    contractId: tx,
+    input: {
+      function: "transfer",
+      qty: 6555,
+      target: "9EIo8Qm0gPXIqMpzx8nrZ0YYDGaAnMWXhrPdvXIO0Fg",
+    },
     signer: signer(),
     tags: [],
   });
