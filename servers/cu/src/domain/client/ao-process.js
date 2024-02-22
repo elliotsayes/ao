@@ -15,9 +15,9 @@ const gzipP = promisify(gzip)
 
 /**
  * @type {{
- *  get: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer }>['get']
- *  set: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer }>['set']
- *  lru: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer }>
+ *  get: LRUCache<string, { evaluation: Evaluation, Memory: string }>['get']
+ *  set: LRUCache<string, { evaluation: Evaluation, Memory: string }>['set']
+ *  lru: LRUCache<string, { evaluation: Evaluation, Memory: string }>
  * }}
  *
  * @typedef Evaluation
@@ -57,10 +57,6 @@ export async function createProcessMemoryCache ({ MAX_SIZE, TTL, onEviction }) {
      * #######################
      */
     maxSize: MAX_SIZE,
-    /**
-     * Size is calculated using the Memory Array Buffer
-     */
-    sizeCalculation: ({ Memory }) => Memory.byteLength,
     noDisposeOnSet: true,
     disposeAfter: (value, key, reason) => {
       if (reason === 'set') return
@@ -99,7 +95,7 @@ export async function createProcessMemoryCache ({ MAX_SIZE, TTL, onEviction }) {
       t.unref()
       timers.set(key, t)
 
-      return data.set(key, value)
+      return data.set(key, value, { size: value.memorySize })
     },
     lru: data
   }
@@ -353,7 +349,6 @@ export function findProcessMemoryBeforeWith ({
         )
 
         return of(cached)
-          .chain(fromPromise((cached) => gunzipP(cached.Memory)))
           .map((Memory) => ({
             Memory,
             timestamp: cached.evaluation.timestamp,
