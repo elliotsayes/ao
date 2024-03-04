@@ -88,7 +88,7 @@ export function findModuleWith ({ pouchDb }) {
   }
 }
 
-export function evaluatorWith ({ evaluate }) {
+export function evaluatorWith ({ evaluate, prime, eject }) {
   return ({ moduleId, gas, memLimit }) => of({ moduleId, gas, memLimit })
     /**
      * Create an evaluator function scoped to this particular
@@ -96,8 +96,14 @@ export function evaluatorWith ({ evaluate }) {
      */
     .map(() => {
       const streamId = randomBytes(8).toString('hex')
-      return ({ name, processId, Memory, message, AoGlobal }) =>
-        evaluate({ streamId, moduleId, gas, memLimit, name, processId, Memory, message, AoGlobal })
+
+      const evaluator = ({ name, processId, message, AoGlobal }) =>
+        evaluate({ streamId, moduleId, gas, memLimit, name, processId, message, AoGlobal })
+
+      evaluator.prime = (Memory) => prime(streamId, Memory)
+      evaluator.eject = () => eject(streamId)
+
+      return evaluator
     })
     .toPromise()
 }

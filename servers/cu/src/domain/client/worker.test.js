@@ -16,9 +16,13 @@ describe('worker', async () => {
   describe('evaluateWith', async () => {
     describe('output', async () => {
       let evaluate
+      let eject
       const wasmInstanceCache = new LRUCache({ max: 1 })
+      const wasmMemoryCache = new Map()
       before(async () => {
-        evaluate = (await import('./worker.js')).evaluateWith({
+        const worker = await import('./worker.js')
+        evaluate = worker.evaluateWith({
+          wasmMemoryCache,
           wasmInstanceCache,
           wasmModuleCache: new LRUCache({ max: 1 }),
           readWasmFile: async () => createReadStream('./test/processes/happy/process.wasm'),
@@ -31,9 +35,14 @@ describe('worker', async () => {
           }),
           logger
         })
+
+        eject = worker.ejectWith({ wasmMemoryCache })
       })
 
-      beforeEach(() => wasmInstanceCache.clear())
+      beforeEach(async () => {
+        wasmInstanceCache.clear()
+        await eject('stream-123')
+      })
 
       const args = {
         streamId: 'stream-123',
@@ -42,7 +51,6 @@ describe('worker', async () => {
         memLimit: 9_000_000_000_000,
         name: 'message 123',
         processId: 'process-123',
-        Memory: null,
         message: {
           Id: 'message-123',
           Timestamp: 1702846520559,
@@ -60,9 +68,9 @@ describe('worker', async () => {
         }
       }
 
-      test('returns Memory', async () => {
-        const output = await evaluate(args)
-        assert.ok(output.Memory)
+      test('caches the memory', async () => {
+        await evaluate(args)
+        assert.ok(wasmMemoryCache.get('stream-123'))
       })
 
       test('returns messages', async () => {
@@ -121,10 +129,6 @@ describe('worker', async () => {
           }
         })
 
-        /**
-         * Assert the memory of the internal process state is returned
-         */
-        assert.ok(output.Memory)
         assert.deepEqual(
           /**
            * Our process used in the unit tests serializes the state being mutated
@@ -152,8 +156,12 @@ describe('worker', async () => {
 
     describe('errors', async () => {
       let evaluate
+      let prime
+      const wasmMemoryCache = new Map()
       before(async () => {
-        evaluate = (await import('./worker.js')).evaluateWith({
+        const worker = await import('./worker.js')
+        evaluate = worker.evaluateWith({
+          wasmMemoryCache,
           wasmInstanceCache: new LRUCache({ max: 1 }),
           wasmModuleCache: new LRUCache({ max: 1 }),
           readWasmFile: async () => createReadStream('./test/processes/sad/process.wasm'),
@@ -164,7 +172,11 @@ describe('worker', async () => {
           ),
           logger
         })
+
+        prime = worker.primeWith({ wasmMemoryCache })
       })
+
+      beforeEach(async () => prime('stream-123', Buffer.from('Hello', 'utf-8')))
 
       const args = {
         streamId: 'stream-123',
@@ -173,7 +185,6 @@ describe('worker', async () => {
         memLimit: 9_000_000_000_000,
         name: 'message 123',
         processId: 'process-123',
-        Memory: Buffer.from('Hello', 'utf-8'),
         // Will add message in each test case
         AoGlobal: {
           Process: {
@@ -204,7 +215,7 @@ describe('worker', async () => {
          * So we assert that the original Memory that was passed in is returned
          * from eval
          */
-        assert.deepStrictEqual(output.Memory, Buffer.from('Hello', 'utf-8'))
+        assert.deepStrictEqual(wasmMemoryCache.get('stream-123'), Buffer.from('Hello', 'utf-8'))
         assert.deepStrictEqual(output.Error, { code: 123, message: 'a handled error within the process' })
       })
 
@@ -222,7 +233,7 @@ describe('worker', async () => {
           }
         })
 
-        assert.deepStrictEqual(output.Memory, Buffer.from('Hello', 'utf-8'))
+        assert.deepStrictEqual(wasmMemoryCache.get('stream-123'), Buffer.from('Hello', 'utf-8'))
         assert.deepStrictEqual(output.Error, { code: 123, message: 'a thrown error within the process' })
       })
 
@@ -243,7 +254,7 @@ describe('worker', async () => {
 
         assert.ok(output.Error)
         assert(output.Error.endsWith("attempt to index a nil value (field 'field')"))
-        assert.deepStrictEqual(output.Memory, Buffer.from('Hello', 'utf-8'))
+        assert.deepStrictEqual(wasmMemoryCache.get('stream-123'), Buffer.from('Hello', 'utf-8'))
       })
     })
   })

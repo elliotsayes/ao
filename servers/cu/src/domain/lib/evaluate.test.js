@@ -14,19 +14,30 @@ async function * toAsyncIterable (iterable) {
   while (iterable.length) yield iterable.shift()
 }
 
+const prime = async () => {}
+const eject = async () => Buffer.from('hello world')
+
 const happyWasm = await AoLoader(readFileSync('./test/processes/happy/process.wasm'))
 const sadWasm = await AoLoader(readFileSync('./test/processes/sad/process.wasm'))
 async function evaluateHappyMessage ({ moduleId, gas, memLimit }) {
   assert.equal(moduleId, 'foo-module')
   assert.equal(gas, 9_000_000_000_000)
   assert.equal(memLimit, 9_000_000_000_000)
-  return ({ Memory, message, AoGlobal }) => happyWasm(Memory, message, AoGlobal)
+  const evaluator = async ({ Memory, message, AoGlobal }) => happyWasm(Memory, message, AoGlobal)
+  evaluator.prime = prime
+  evaluator.eject = eject
+  return evaluator
 }
 
 async function evaluateSadMessage ({ moduleId }) {
   assert.equal(moduleId, 'foo-module')
-  return ({ Memory, message, AoGlobal }) => sadWasm(Memory, message, AoGlobal)
+  const evaluator = async ({ Memory, message, AoGlobal }) => sadWasm(Memory, message, AoGlobal)
+  evaluator.prime = prime
+  evaluator.eject = eject
+  return evaluator
 }
+evaluateSadMessage.prime = prime
+evaluateSadMessage.eject = eject
 
 describe('evaluate', () => {
   test('adds output and last to context', async () => {

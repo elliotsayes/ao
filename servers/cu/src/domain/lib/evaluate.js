@@ -156,6 +156,12 @@ export function evaluateWith (env) {
                 const deepHashes = new Set()
 
                 /**
+                 * Prime the evaluator with the any cached memory
+                 * for the Process, if it exists
+                 */
+                await ctx.evaluator.prime(prev.Memory)
+
+                /**
                  * Iterate over the async iterable of messages,
                  * and evaluate each one
                  */
@@ -197,12 +203,11 @@ export function evaluateWith (env) {
                   }
 
                   prev = await Promise.resolve(prev)
-                    .then((prev) =>
-                      Promise.resolve(prev.Memory)
-                        /**
-                         * Where the actual evaluation is performed
-                         */
-                        .then((Memory) => ctx.evaluator({ name, processId: ctx.id, Memory, message, AoGlobal }))
+                    .then(() =>
+                      /**
+                       * Where the actual evaluation is performed
+                       */
+                      Promise.resolve(ctx.evaluator({ name, processId: ctx.id, message, AoGlobal }))
                         /**
                          * These values are folded,
                          * so that we can potentially update the process memory cache
@@ -264,7 +269,7 @@ export function evaluateWith (env) {
                 }
               }
             ),
-            (err) => {
+            async (err) => {
               /**
                * finshed() will leave dangling event listeners even after this callback
                * has been invoked, so that unexpected errors do not cause full-on crashes.
@@ -280,6 +285,10 @@ export function evaluateWith (env) {
           )
         })
 
+        /**
+         * Eject the memory from the evaluator, so that it can be cached
+         */
+        prev.Memory = await ctx.evaluator.eject()
         /**
          * Make sure to attempt to cache the last result
          * in the process memory cache

@@ -158,6 +158,8 @@ export const createApis = async (ctx) => {
        * Evaluation will invoke a worker available in the worker pool
        */
       evaluate: (...args) => workerPool.exec('evaluate', args),
+      prime: (...args) => workerPool.exec('prime', args),
+      eject: (...args) => workerPool.exec('eject', args),
       logger
     }),
     findMessageHashBefore: AoEvaluationClient.findMessageHashBeforeWith({ pouchDb, logger }),
