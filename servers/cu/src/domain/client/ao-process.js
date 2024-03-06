@@ -4,7 +4,7 @@ import { Readable } from 'node:stream'
 import { basename, join } from 'node:path'
 
 import { fromPromise, of, Rejected, Resolved } from 'hyper-async'
-import { always, applySpec, compose, identity, map, path, prop, transduce } from 'ramda'
+import { always, applySpec, compose, identity, map, path, prop, sum, transduce } from 'ramda'
 import { z } from 'zod'
 import { LRUCache } from 'lru-cache'
 
@@ -21,9 +21,9 @@ function pluckTagValue (name, tags) {
 
 /**
  * @type {{
- *  get: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer }>['get']
- *  set: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer }>['set']
- *  lru: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer }>
+ *  get: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer, tail: number }>['get']
+ *  set: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer, tail: number }>['set']
+ *  lru: LRUCache<string, { evaluation: Evaluation, Memory: ArrayBuffer, tail: number }>
  * }}
  *
  * @typedef Evaluation
@@ -420,7 +420,7 @@ export function findProcessMemoryBeforeWith ({
           'Found Checkpoint in in-memory cache for process "%s" before message with parameters "%j": "%j"',
           processId,
           { timestamp, ordinate, cron },
-          cached.evaluation
+          { ...cached.evaluation, tail: cached.tail }
         )
 
         return of(cached)
@@ -604,7 +604,7 @@ export function findProcessMemoryBeforeWith ({
       .toPromise()
 }
 
-export function saveLatestProcessMemoryWith ({ cache, logger, saveCheckpoint, EAGER_CHECKPOINT_THRESHOLD }) {
+export function saveLatestProcessMemoryWith ({ cache, logger, saveCheckpoint, EAGER_CHECKPOINT_THRESHOLD = 0 }) {
   return async ({ processId, moduleId, messageId, timestamp, epoch, nonce, ordinate, cron, blockHeight, Memory, evalCount }) => {
     const cached = cache.get(processId)
 
@@ -617,10 +617,13 @@ export function saveLatestProcessMemoryWith ({ cache, logger, saveCheckpoint, EA
      */
     if (cached && isLaterThan(cached, { timestamp, ordinate, cron })) return
 
+    const tail = sum([cached ? cached.tail : 0, evalCount || 0])
+    const passedThreshold = EAGER_CHECKPOINT_THRESHOLD && tail >= EAGER_CHECKPOINT_THRESHOLD
+
     logger(
       'Saving latest memory for process "%s" with parameters "%j"',
       processId,
-      { messageId, timestamp, ordinate, cron, blockHeight }
+      { messageId, timestamp, ordinate, cron, blockHeight, tail }
     )
     /**
      * Either no value was cached or the provided evaluation is later than
@@ -638,20 +641,28 @@ export function saveLatestProcessMemoryWith ({ cache, logger, saveCheckpoint, EA
       encoding: 'gzip',
       cron
     }
-    cache.set(processId, { Memory: zipped, evaluation })
+    cache.set(processId, {
+      Memory: zipped,
+      evaluation,
+      /**
+       * Make sure to reset the tail length, if an eager checkpoint
+       * will be created
+       */
+      tail: passedThreshold ? 0 : tail
+    })
 
-    if (!evalCount || !EAGER_CHECKPOINT_THRESHOLD || evalCount < EAGER_CHECKPOINT_THRESHOLD) return
+    if (!passedThreshold) return
 
     /**
      * Eagerly create the Checkpoint on the next event queue drain
      */
     setImmediate(() => {
       logger(
-        'Eager Checkpoint Threshold of "%d" messages met when evaluating process "%s" up to "%j" -- "%d" evaluations peformed. Eagerly creating a Checkpoint...',
+        'Eager Checkpoint Threshold of "%d" messages met when evaluating process "%s" up to "%j" -- "%d" tail evaluations peformed. Eagerly creating a Checkpoint...',
         EAGER_CHECKPOINT_THRESHOLD,
         processId,
         { messageId, timestamp, ordinate, cron, blockHeight },
-        evalCount
+        tail
       )
 
       return saveCheckpoint({ Memory: zipped, ...evaluation })
