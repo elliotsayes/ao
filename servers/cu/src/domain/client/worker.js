@@ -10,7 +10,7 @@ import { worker } from 'workerpool'
 import { T, always, applySpec, assocPath, cond, defaultTo, identity, ifElse, is, pathOr, pipe, propOr } from 'ramda'
 import { LRUCache } from 'lru-cache'
 import { Rejected, Resolved, fromPromise, of } from 'hyper-async'
-import AoLoader from '@permaweb/ao-loader'
+import AoLoader from './load.cjs'
 
 import { createLogger } from '../logger.js'
 
